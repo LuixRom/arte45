@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Arte & Emociones</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- onnxruntime-web desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <h1>Arte & Emociones</h1>
+      <div id="statusPill" class="pill pill-idle">Listo</div>
+    </header>
+
+    <main class="grid">
+      <!-- Panel visual -->
+      <section class="panel">
+        <div class="stage">
+          <!-- Cámara -->
+          <video id="video" class="media" autoplay playsinline muted></video>
+          <!-- Animación (silenciada y precargada para autoplay sin bloqueo) -->
+          <video id="anim" class="media hidden" muted playsinline preload="auto"></video>
+          <!-- Overlay de texto -->
+          <div id="overlay" class="overlay"></div>
+        </div>
+      </section>
+
+      <!-- Panel control -->
+      <section class="panel right">
+        <p class="lead">
+          Coloca tu rostro frente a la cámara. Al pulsar <b>Iniciar</b>,
+          verás una breve cuenta regresiva; luego se capturarán varios fotogramas,
+          se decidirá una <b>única</b> emoción asco
+          y se mostrará la animación correspondiente.
+        </p>
+
+        <!-- Selector de cámara -->
+        <div class="field">
+          <label for="cameraSelect" class="label">Cámara</label>
+          <select id="cameraSelect" class="select"></select>
+        </div>
+
+        <div class="controls">
+          <button id="btnStart" class="btn btn-primary">Iniciar</button>
+          <button id="btnRetry" class="btn" disabled>Probar otra emoción</button>
+        </div>
+
+        <div class="cards">
+          <div class="card"><div class="label">Ventana de captura</div><div class="value" id="cfgCapture">2.0s</div></div>
+          <div class="card"><div class="label">Umbral de confianza</div><div class="value" id="cfgConf">0.58</div></div>
+          <div class="card"><div class="label">Resolución modelo</div><div class="value">96×96×1</div></div>
+          <div class="card"><div class="label">Ejecución</div><div class="value">ONNX Runtime (WebGL/WASM)</div></div>
+        </div>
+
+        <div id="resultBox" class="result hidden">
+          <div class="label">Emoción detectada</div>
+          <div class="emote">
+            <span id="resultLabel">—</span>
+            <span id="resultConf" class="conf"></span>
+          </div>
+          <p id="eduText" class="edu">
+            Aquí puedes incluir texto didáctico sobre cómo esta emoción influye en el cuerpo.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Canvas oculto para preprocesado -->
+  <canvas id="buffer" class="hidden" width="96" height="96"></canvas>
+
+  <!-- JS sin type=module -->
+  <script src="app.js"></script>
+</body>
+</html>
