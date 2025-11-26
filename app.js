@@ -89,37 +89,45 @@ function stopTracks(){
 
 /* ====== INIT: carga modelo/labels y abre cámara (recordada) ====== */
 (async function init(){
-  try{
+  try {
+    // 1) Cargar modelo y labels
     session = await ort.InferenceSession.create(MODEL_URL, {
-      executionProviders: ["webgl","wasm"]
+      executionProviders: ["webgl", "wasm"]
     });
 
-    const data = await fetch(LABELS_URL).then(r=>r.json());
+    const data = await fetch(LABELS_URL).then(r => r.json());
     if (Array.isArray(data)) labels = data;
     else {
-      const maxk = Math.max(...Object.keys(data).map(k=>parseInt(k)));
-      labels = new Array(maxk+1).fill("");
-      for (const [k,v] of Object.entries(data)) labels[parseInt(k)] = v;
+      const maxk = Math.max(...Object.keys(data).map(k => parseInt(k)));
+      labels = new Array(maxk + 1).fill("");
+      for (const [k, v] of Object.entries(data)) {
+        labels[parseInt(k)] = v;
+      }
     }
 
-    // Abre la cámara recordada si existe
+    // 2) Intentar abrir cámara recordada
     const savedId = localStorage.getItem("emotion_cam_id");
-    await startCamera(savedId);
-    setPhase("idle");
+    try {
+      await startCamera(savedId);
+    } catch (e) {
+      console.warn("Fallo con savedId, probando sin deviceId:", e);
+      localStorage.removeItem("emotion_cam_id");
+      await startCamera(null);   // fallback genérico
+    }
 
-    // Escucha cambios de hardware (conectar/quitar cámaras)
+    setPhase("idle");
     navigator.mediaDevices.addEventListener("devicechange", onDeviceChange);
-  } catch(err){
+  } catch (err) {
     console.error(err);
     alert("No pude cargar modelo/labels o abrir la cámara. Revisa rutas y permisos (HTTPS/localhost).");
   }
 })();
 
+
 /* ====== CÁMARA (con deviceId opcional) ====== */
 async function startCamera(deviceId = null){
   stopTracks();
 
-  // Intenta usar la cámara indicada; si falla, cae a facingMode:user
   const constraints = deviceId
     ? {
         video: {
@@ -142,9 +150,9 @@ async function startCamera(deviceId = null){
   $video.srcObject = stream;
   await $video.play();
   currentDeviceId = deviceId || await getDeviceIdFromStream(stream);
-
   await populateCameraList(currentDeviceId);
 }
+
 
 async function getDeviceIdFromStream(stream){
   const track = stream.getVideoTracks()[0];

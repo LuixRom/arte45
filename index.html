@@ -1,80 +1,168 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Arte & Emociones</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Arte & Emociones - Experiencia Interactiva</title>
 
-  <!-- onnxruntime-web desde CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"
-          crossorigin="anonymous"></script>
+  <!-- Estilos -->
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/curtain.css" />
+  <link rel="stylesheet" href="styles/wizard.css" />
+  <link rel="stylesheet" href="styles/camera.css" />
+
+  <!-- ONNX Runtime Web desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js" crossorigin="anonymous"></script>
 </head>
+
 <body>
-  <div class="page">
-    <header class="topbar">
-      <h1>Arte & Emociones</h1>
-      <div id="statusPill" class="pill pill-idle">Listo</div>
-    </header>
+  <div id="app">
 
-    <main class="grid">
-      <!-- Panel visual -->
-      <section class="panel">
-        <div class="stage">
-          <!-- Cámara -->
-          <video id="video" class="media" autoplay playsinline muted></video>
-          <!-- Animación (silenciada y precargada para autoplay sin bloqueo) -->
-          <video id="anim" class="media hidden" muted playsinline preload="auto"></video>
-          <!-- Overlay de texto -->
-          <div id="overlay" class="overlay"></div>
-        </div>
-      </section>
+    <!-- ========== PANTALLA 1: CORTINAS ========== -->
+    <div id="curtain-screen" class="screen curtain-screen">
+      <!-- Barra de cortina superior -->
+      <div class="curtain-rod"></div>
 
-      <!-- Panel control -->
-      <section class="panel right">
-        <p class="lead">
-          Coloca tu rostro frente a la cámara. Al pulsar <b>Iniciar</b>,
-          verás una breve cuenta regresiva; luego se capturarán varios fotogramas,
-          se decidirá una <b>única</b> emoción asco
-          y se mostrará la animación correspondiente.
+      <!-- Contenedor de cortinas -->
+      <div class="curtain-container">
+        <div class="curtain curtain-left"></div>
+        <div class="curtain curtain-right"></div>
+      </div>
+
+      <!-- Contenido central -->
+      <div class="curtain-content">
+        <h1 class="curtain-title">Bienvenido/a</h1>
+        <p class="curtain-message">
+          Vamos a explorar tus emociones.<br>
+          Un viaje introspectivo en tres actos.
         </p>
+        <button id="curtain-start-btn" class="btn btn-primary">Empezar</button>
+      </div>
+    </div>
 
-        <!-- Selector de cámara -->
-        <div class="field">
-          <label for="cameraSelect" class="label">Cámara</label>
-          <select id="cameraSelect" class="select"></select>
-        </div>
-
-        <div class="controls">
-          <button id="btnStart" class="btn btn-primary">Iniciar</button>
-          <button id="btnRetry" class="btn" disabled>Probar otra emoción</button>
-        </div>
-
-        <div class="cards">
-          <div class="card"><div class="label">Ventana de captura</div><div class="value" id="cfgCapture">2.0s</div></div>
-          <div class="card"><div class="label">Umbral de confianza</div><div class="value" id="cfgConf">0.58</div></div>
-          <div class="card"><div class="label">Resolución modelo</div><div class="value">96×96×1</div></div>
-          <div class="card"><div class="label">Ejecución</div><div class="value">ONNX Runtime (WebGL/WASM)</div></div>
-        </div>
-
-        <div id="resultBox" class="result hidden">
-          <div class="label">Emoción detectada</div>
-          <div class="emote">
-            <span id="resultLabel">—</span>
-            <span id="resultConf" class="conf"></span>
+    <!-- ========== PANTALLA 2: WIZARD DE PREGUNTAS ========== -->
+    <div id="wizard-screen" class="screen wizard-screen">
+      <div class="wizard-container">
+        <!-- Progreso -->
+        <div class="wizard-progress">
+          <div id="wizard-progress-text" class="progress-text">Pregunta 1 de 5</div>
+          <div class="progress-bar-container">
+            <div id="wizard-progress-bar" class="progress-bar" style="width: 20%"></div>
           </div>
-          <p id="eduText" class="edu">
-            Aquí puedes incluir texto didáctico sobre cómo esta emoción influye en el cuerpo.
-          </p>
         </div>
-      </section>
-    </main>
+
+        <!-- Pregunta dinámica -->
+        <div id="wizard-question-container" class="wizard-question">
+          <!-- Se renderiza dinámicamente por wizard.js -->
+        </div>
+
+        <!-- Navegación -->
+        <div class="wizard-navigation">
+          <button id="wizard-next-btn" class="btn btn-primary" disabled>Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PANTALLA 3: CÁMARA Y DETECCIÓN ========== -->
+    <div id="camera-screen" class="screen camera-screen">
+      <div class="camera-container">
+
+        <!-- Panel de video -->
+        <div class="camera-panel">
+          <div class="camera-stage">
+            <!-- Video de cámara -->
+            <video id="camera-video" class="camera-media" autoplay playsinline muted></video>
+
+            <!-- Video de animación -->
+            <video id="camera-anim" class="camera-media hidden" muted playsinline preload="auto"></video>
+
+            <!-- Overlay de texto -->
+            <div id="camera-overlay" class="camera-overlay"></div>
+
+            <!-- Cuenta regresiva -->
+            <div id="countdown-overlay" class="countdown-overlay">
+              <div id="countdown-number" class="countdown-number">5</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de control -->
+        <div class="camera-control-panel">
+          <!-- Intro -->
+          <div class="camera-intro">
+            <h2 class="camera-title">Muéstrame tu emoción</h2>
+            <p class="camera-message">
+              Coloca tu rostro frente a la cámara. Al pulsar <strong>"Listo, comenzar"</strong>,
+              verás una cuenta regresiva de 5 segundos. Luego capturaremos tu expresión
+              y te mostraremos la emoción detectada.
+            </p>
+          </div>
+
+          <!-- Estado -->
+          <div style="text-align: center;">
+            <span id="camera-status" class="camera-status idle">Listo</span>
+          </div>
+
+          <!-- Selector de cámara -->
+          <div class="camera-selector">
+            <label for="camera-select" class="camera-selector-label">Cámara</label>
+            <select id="camera-select" class="camera-select"></select>
+          </div>
+
+          <!-- Botones -->
+          <div class="camera-controls">
+            <button id="camera-start-btn" class="btn btn-primary">Listo, comenzar</button>
+            <button id="camera-retry-btn" class="btn btn-secondary" disabled>Probar otra emoción</button>
+            <button id="camera-home-btn" class="btn btn-secondary">Volver al Inicio</button>
+          </div>
+
+          <!-- Información técnica -->
+          <div class="camera-info">
+            <div class="info-card">
+              <div class="info-label">Ventana de captura</div>
+              <div class="info-value">4.0s</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Umbral confianza</div>
+              <div class="info-value">0.20</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Resolución modelo</div>
+              <div class="info-value">96×96×1</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Ejecución</div>
+              <div class="info-value">ONNX Runtime</div>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div id="camera-result" class="camera-result hidden">
+            <div class="result-label">Emoción detectada</div>
+            <div class="result-emotion">
+              <span id="result-label">—</span>
+              <span id="result-conf" class="result-confidence"></span>
+            </div>
+            <p class="result-description">
+              Esta emoción refleja tu estado emocional en este momento.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- Canvas oculto para preprocesado -->
   <canvas id="buffer" class="hidden" width="96" height="96"></canvas>
 
-  <!-- JS sin type=module -->
-  <script src="app.js"></script>
+  <!-- Scripts (orden importante) -->
+  <script src="js/curtain.js"></script>
+  <script src="js/wizard.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/app.js"></script>
 </body>
+
 </html>
